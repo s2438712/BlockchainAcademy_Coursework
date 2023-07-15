@@ -1,0 +1,54 @@
+pragma solidity ^0.8.0;
+
+contract SatisfactionVoting {
+    address private admin;
+    struct VoteTopic {
+        string topic;
+        bool isActive;
+        mapping(address => bool) voters;
+        uint256 positiveVotes;
+        uint256 negativeVotes;
+    }
+    mapping(string => VoteTopic) public voteTopics;
+
+    modifier onlyAdmin {
+        require(msg.sender == admin, "Only admin can call this.");
+        _;
+    }
+
+    constructor() {
+        admin = msg.sender;
+    }
+
+    function createVoteTopic(string memory _topic) public onlyAdmin {
+        VoteTopic storage newTopic = voteTopics[_topic];
+        newTopic.topic = _topic;
+        newTopic.isActive = true;
+    }
+
+    function cancelVoteTopic(string memory _topic) public onlyAdmin {
+        require(voteTopics[_topic].isActive == true, "Topic doesn't exist or is not active.");
+        voteTopics[_topic].isActive = false;
+    }
+
+    function vote(string memory _topic, bool _satisfaction) public {
+        require(voteTopics[_topic].isActive == true, "Topic doesn't exist or is not active.");
+        require(voteTopics[_topic].voters[msg.sender] == false, "Voter has already voted on this topic.");
+        
+        if (_satisfaction == true) {
+            voteTopics[_topic].positiveVotes += 1;
+        } else {
+            voteTopics[_topic].negativeVotes += 1;
+        }
+        
+        voteTopics[_topic].voters[msg.sender] = true;
+    }
+
+    function hasVoted(string memory _topic, address _voter) public view returns(bool) {
+        return voteTopics[_topic].voters[_voter];
+    }
+    
+    function getVotesCount(string memory _topic) public view returns(uint256, uint256) {
+        return (voteTopics[_topic].positiveVotes, voteTopics[_topic].negativeVotes);
+    }
+}
